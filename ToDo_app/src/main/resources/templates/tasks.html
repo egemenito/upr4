@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Todo List</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 760px; margin: 30px auto; padding: 0 15px; background: #f4f6f8; color: #222; }
+        h1 { text-align: center; }
+        .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+        .stats { display: flex; gap: 12px; text-align: center; }
+        .stats div { flex: 1; padding: 10px; border-radius: 6px; background: #eef2f7; }
+        .stats strong { display: block; font-size: 1.6em; }
+        label { display: block; margin: 8px 0 4px; font-weight: bold; }
+        input[type=text], textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #bbb; border-radius: 4px; font: inherit; }
+        .error { color: #c0392b; font-size: .9em; margin-top: 4px; }
+        button, .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; color: #fff; text-decoration: none; font-size: .9em; display: inline-block; }
+        .primary { background: #2980b9; } .done { background: #27ae60; } .undo { background: #e67e22; }
+        .edit { background: #8e44ad; } .del { background: #c0392b; } .cancel { background: #7f8c8d; }
+        .task { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; border-left: 5px solid #e67e22; }
+        .task.completed { border-left-color: #27ae60; opacity: .75; }
+        .task.completed .title { text-decoration: line-through; }
+        .title { font-weight: bold; font-size: 1.1em; }
+        .meta { color: #777; font-size: .8em; margin-top: 4px; }
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .actions form { margin: 0; }
+        .empty { text-align: center; color: #777; }
+    </style>
+</head>
+<body>
+<h1>Todo List</h1>
+
+<!-- Статистика -->
+<div class="card stats">
+    <div><strong th:text="${total}">0</strong>Общо</div>
+    <div><strong th:text="${activeCount}">0</strong>Незавършени</div>
+    <div><strong th:text="${completedCount}">0</strong>Завършени</div>
+</div>
+
+<!-- Форма за добавяне / редактиране -->
+<div class="card">
+    <h3 th:text="${editId == null} ? 'Нова задача' : 'Редактиране на задача'">Нова задача</h3>
+    <form th:object="${taskForm}"
+          th:action="${editId == null} ? @{/tasks} : @{/tasks/{id}/edit(id=${editId})}"
+          method="post">
+        <label for="title">Заглавие</label>
+        <input type="text" id="title" th:field="*{title}">
+        <div class="error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+
+        <label for="description">Описание</label>
+        <textarea id="description" rows="3" th:field="*{description}"></textarea>
+        <div class="error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+
+        <p>
+            <button type="submit" class="primary" th:text="${editId == null} ? 'Добави' : 'Запази'">Добави</button>
+            <a th:if="${editId != null}" th:href="@{/tasks}" class="btn cancel">Отказ</a>
+        </p>
+    </form>
+</div>
+
+<!-- Списък със задачи -->
+<div class="card empty" th:if="${#lists.isEmpty(tasks)}">Няма задачи. Добавете първата!</div>
+
+<div class="card task" th:each="task : ${tasks}" th:classappend="${task.completed} ? 'completed'">
+    <div>
+        <div class="title" th:text="${task.title}">Заглавие</div>
+        <div th:text="${task.description}">Описание</div>
+        <div class="meta">
+            <span th:text="${task.completed} ? 'Завършена' : 'Незавършена'"></span> ·
+            Създадена: <span th:text="${#temporals.format(task.createdAt, 'dd.MM.yyyy HH:mm')}"></span>
+        </div>
+    </div>
+    <div class="actions">
+        <form th:action="@{/tasks/{id}/toggle(id=${task.id})}" method="post">
+            <button type="submit" th:classappend="${task.completed} ? 'undo' : 'done'"
+                    th:text="${task.completed} ? 'Активирай' : 'Завърши'">Завърши</button>
+        </form>
+        <a th:href="@{/tasks/{id}/edit(id=${task.id})}" class="btn edit">Редактирай</a>
+        <form th:action="@{/tasks/{id}/delete(id=${task.id})}" method="post"
+              onsubmit="return confirm('Сигурни ли сте, че искате да изтриете задачата?');">
+            <button type="submit" class="del">Изтрий</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
